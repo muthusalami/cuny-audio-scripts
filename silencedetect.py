@@ -1,5 +1,3 @@
-
-
 # required libraries
 from pyAudioAnalysis import audioBasicIO as aIO
 from pyAudioAnalysis import audioSegmentation as aS
