@@ -213,7 +213,7 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
 def import_xml(wav_file, xml_file):
     if os.path.isfile(xml_file) and os.path.getsize(xml_file) > 0:
         # bwf metaedit command to initiate xml file import
-        xml_import = subprocess.run(['bwfmetaedit', '--in-cue-xml', wav_file], capture_output=True, text=True)
+        xml_import = subprocess.run(['bwfmetaedit', '--in-cue-xml', wav_file], capture_output=True, text=True, shell=True)
 
         if xml_import.returncode == 0:
             print(f"{GREEN}[{os.path.basename(wav_file)}] BWFmetaedit import successful")
@@ -229,7 +229,7 @@ def export_new_xml(wav_file, xml_file, filename):
     try:
         # execute the bwfmetaedit command and redirect the output to the specified XML file
         command = ['bwfmetaedit', '--out-xml', wav_file]
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, capture_output=True, text=True, check=True, shell=True)
 
 
         # save the output to the filename_xml.txt file
