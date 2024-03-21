@@ -1,0 +1,143 @@
+_find_input (){
+    CONCATSOURCE=""
+    SOURCEFILE=""
+    ISOBJECT=""
+    unset FFMPEGINPUT
+    if [ -f "${1}" ] ; then
+        # if the input is a file then just `-i file`
+        ISOBJECT="Y"
+        SOURCEFILE="${1}"
+        FFMPEGINPUT+=(-i)
+        FFMPEGINPUT+=("${SOURCEFILE}")
+    elif [ -d "${1}/objects" ] ; then
+        EXPECTEDSERVICEFILE="${1}/objects/service/$(basename "${1}").mov"
+        if [[ -s "${EXPECTEDSERVICEFILE}" && "${PREFERRED_SOURCE}" == "service" ]] ; then
+            ISOBJECT="N"
+            SOURCEFILE="${EXPECTEDSERVICEFILE}"
+            FFMPEGINPUT+=(-i)
+            FFMPEGINPUT+=("${SOURCEFILE}")
+        else
+            if [[ "${PREFERRED_SOURCE}" == "service" ]] ; then
+                _report -wt "This process normally uses the service file as a source but it is missing from this package, so will try to use the objects file(s)."
+            fi
+            ISOBJECT="Y"
+            INPUTFILES=$(_maketemp)
+            if [[ -d "${1}/objects/restoration" ]] ; then
+                 LOOKHERE="${1}/objects/restoration"
+                 _report -dt "This package contains a restoration, using that for processing."
+            else
+                 LOOKHERE="${1}/objects"
+            fi
+            # find av files in a directory and output to a temp list
+            find "${LOOKHERE}" -type f -size +0 "${OBJECTS_FIND_EXCLUSIONS[@]}" | sort | while read file ; do
+                streamcount=$(ffprobe -loglevel quiet "$file" -show_entries format=nb_streams -of default=nw=1:nk=1)
+                duration_ts=$(ffprobe -loglevel quiet "$file" -show_entries stream=duration_ts -of default=nw=1:nk=1)
+                if [[ "$streamcount" > 0  && "${duration_ts}" != 1 ]] ; then
+                    _report -d "Input file: $file"
+                    echo "$file" >> "${INPUTFILES}"
+                fi
+            done
+            INPUTFILECOUNT=$(wc -l "${INPUTFILES}" | awk '{print $1}')
+            if [[ "${INPUTFILECOUNT}" = 0 ]] ; then
+                _report -w "Error no audiovisual input files were found."
+                _writeerrorlog "_find_input" "A valid source audiovisual file was not found, so the script could not proceed."
+                exit 1
+            elif [[ "${INPUTFILECOUNT}" = 1 ]] ; then
+                SOURCEFILE=$(cat "${INPUTFILES}" | head -n 1)
+                FFMPEGINPUT+=(-i)
+                FFMPEGINPUT+=("${SOURCEFILE}")
+            else
+                VOLADJUST="N"
+                INPUTOPTIONS+=(-f concat)
+                INPUTOPTIONS+=(-safe 0)
+                FFCONCATFILE=$(_maketemp)
+                while read i ; do
+                    duration4cat=$(ffprobe -loglevel quiet "${i}" -show_entries format=duration -of default=nw=1:nk=1)
+                    printf "file " >> "${FFCONCATFILE}"
+                    printf '%q' "${i}" >> "${FFCONCATFILE}"
+                    echo >> "${FFCONCATFILE}"
+                    echo "duration $duration4cat" >> "${FFCONCATFILE}"
+                done < "${INPUTFILES}"
+                SOURCEFILE=$(cat "${INPUTFILES}" | head -n 1)
+                FFMPEGINPUT+=(-i)
+                FFMPEGINPUT+=("${FFCONCATFILE}")
+            fi
+        fi
+    else
+        _report -wt "A valid source file isn't found in ${LOOKHERE}."
+        _writeerrorlog "_find_input" "A valid source file was not found, so the script could not proceed."
+        exit 1
+    fi
+    LOG+="SOURCEFILE: ${SOURCEFILE}\n"
+    # handle exceptions for certain types of source files
+    if [[ "${SOURCEFILE#*.}" = "iso" ]] ; then
+        _report -dt "Detecting iso input and hoping its a dvd image."
+        if [[ "$(uname -s)" = "Darwin" ]] ; then
+            MOUNTPATH="$(hdiutil mount "${SOURCEFILE}" | awk '{print $2}')"
+            _report -dt "Mounting iso at ${MOUNTPATH}"
+        else
+            MOUNTPATH="/tmp/temporary_dvd_path"
+            rm -rfv "${MOUNTPATH}"
+            if [ ! -d "${MOUNTPATH}" ] ; then
+                mkdir -p "${MOUNTPATH}"
+            fi
+            7z e -r -o"${MOUNTPATH}" "${SOURCEFILE}"
+        fi
+        OLDSOURCEFILE="${SOURCEFILE}"
+        FFMPEGINPUT=(-i)
+        FFMPEGINPUT+=("concat:$(find "${MOUNTPATH}" -iname "VTS*[1-9].VOB" | sort | sed -e :a -e '$!N;s/\n/|/;ta')")
+        SOURCEFILE=$(find "${MOUNTPATH}" -iname "VTS_*_1.VOB" | head -1)
+        _report -dt "Using ${CONCATSOURCE} for transcoding."
+        _report -dt "Using ${SOURCEFILE} for assessment."
+        _report -wt "Extracting to ${MOUNTPATH}. Please unmount ${MOUNTPATH} later."
+    elif [[ "${SOURCEFILE#*.}" = "mkv" || "${SOURCEFILE#*.}" = "mka" ]] ; then
+        # loops through each file in INPUTFILES
+        while IFS= read -r INPUTFILE; do
+            # if the source file is an mkv or mka, then check if it has a Presentation Chapter Edition
+            if [[ -n $(mkvextract tags "${INPUTFILE}" | xmlstarlet sel -t -m "/Tags/Tag/Simple[String='Presentation']" -v String) ]] ; then
+                _report -dt "The input file ($(basename "${INPUTFILE}")) contains a Chapter Edition called 'Presentation', will use that for transcoding."
+                LISTCHAPTERS=$(mkvextract chapters "${INPUTFILE}" | xmlstarlet sel -t -m Chapters/EditionEntry[EditionFlagDefault='1']/ChapterAtom -v ChapterTimeStart -o "-" -v ChapterTimeEnd -o "-" -v ChapterSegmentUID -n -)
+                SegmentUIDs=$(mkvextract chapters "${INPUTFILE}" | xmlstarlet sel -t -m Chapters/EditionEntry[EditionFlagDefault='1']/ChapterAtom/ChapterSegmentUID -v . -n | sort -u)
+                if [[ -n "${LISTCHAPTERS}" ]]; then
+                  _report -d "Found this chapter list:"
+                  _report -d "${LISTCHAPTERS}"
+                  unset FFMPEGINPUT
+                  INPUTOPTIONS+=(-f concat)
+                  INPUTOPTIONS+=(-safe 0)
+                  FFCONCATFILE=$(_maketemp)
+                  while read chapter ; do
+                    STARTTIME=$(echo "${chapter}" | cut -d- -f1)
+                    ENDTIME=$(echo "${chapter}" | cut -d- -f2)
+                    CHAPSEGMENTUID=$(echo "${chapter}" | cut -d- -f3)
+                    if [[ -n "${CHAPSEGMENTUID}" ]]; then
+                      MKVFOLDER=$(dirname "${SOURCEFILE}")
+                      while read file ; do
+                        FILESEGMENTUID=$(mkvinfo "${file}" | grep "Segment UID:" | cut -d : -f2 | sed 's/0x//g;s/ //g')
+                        unset MATCHMKV
+                        if [[ "${CHAPSEGMENTUID}" == "${FILESEGMENTUID}" ]] ; then
+                          MATCHMKV="${file}"
+                          break 1
+                        fi
+                      done < <(find "${MKVFOLDER}" -type f \( -name "*.mkv" -o -name "*.mka" \))
+                      if [[ -n "${MATCHMKV}" ]]; then
+                        INPUTFILE="$MATCHMKV"
+                      else
+                        echo "Error: did not find a file to match ${CHAPSEGMENTUID}"
+                        exit
+                      fi
+                    else
+                      INPUTFILE="${INPUTFILE}"
+                    fi
+                    printf "file " >> "${FFCONCATFILE}"
+                    printf '%q' "${INPUTFILE}" >> "${FFCONCATFILE}"
+                    echo >> "${FFCONCATFILE}"
+                    echo "inpoint ${STARTTIME}" >> "${FFCONCATFILE}"
+                    echo "outpoint ${ENDTIME}" >> "${FFCONCATFILE}"
+                  done < <(echo "${LISTCHAPTERS}")
+                  FFMPEGINPUT+=(-i)
+                  FFMPEGINPUT+=("${FFCONCATFILE}")
+                fi
+            fi
+        done < "$INPUTFILES"
+    fi
+}
