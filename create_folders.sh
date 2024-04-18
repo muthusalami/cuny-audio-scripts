@@ -12,7 +12,7 @@ create_folders() {
     for input_dir in "${input_dirs[@]}"; do
         # check if the input directory exists
         if [ ! -d "$input_dir" ]; then
-            echo -e "${YELLOW}Input directory $input_dir does not exist. Skipping.${NC}"
+            echo -e "${YELLOW}Input directory $input_dir does not exist. Aborting.${NC}"
             continue
         fi
 
