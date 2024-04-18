@@ -52,23 +52,23 @@ create_folders() {
             echo -e "${YELLOW}'objects' folder already exists in $input_dir.${NC}"
         fi
 
-        # Ask user if they want to move files
+        # ask user if they want to move files
         read -p "Do you want to move files? (yes/no): " move_files
         case $move_files in
             [Yy]|[Yy][Ee][Ss])
-                # Move .TIF and .tif files to depictions/object_photos folder
-                find "$input_dir" -type f \( -iname "*.tif" -o -iname "*.TIF" -o -iname "*.TIFF" -o -iname "*.tiff" \) -exec mv "{}" "$input_dir/metadata/depictions/object_photos/" \;
-                echo -e "${GREEN}Moved TIFF files to $object_photos_dir.${NC}"
+                # move .TIF and .tif files to depictions/object_photos folder
+                find "$input_dir" -type f \( -iname "*.tif" -o -iname "*.TIF" -o -iname "*.TIFF" -o -iname "*.tiff" \) -exec mv -n "{}" "$input_dir/metadata/depictions/object_photos/" \; 2>/dev/null
+                echo -e "${GREEN}Moved TIFF files to $input_dir/metadata/depictions/object_photos.${NC}"
 
-                # Move .md5 files to metadata folder
-                find "$input_dir" -type f -iname "*.md5" -exec mv {} "$metadata_dir" \;
+                # move .md5 files to metadata folder
+                find "$input_dir" -type f -iname "*.md5" -exec mv -n {} "$metadata_dir" \; 2>/dev/null
                 echo -e "${GREEN}Moved MD5 files to $metadata_dir.${NC}"
 
-                # Move .wav files to objects folder
-                find "$input_dir" -type f -iname "*.wav" -exec mv {} "$objects_dir" \;
+                # move .wav files to objects folder
+                find "$input_dir" -type f -iname "*.wav" -exec mv -n {} "$objects_dir" \; 2>/dev/null
                 echo -e "${GREEN}Moved WAV files to $objects_dir.${NC}"
 
-                # Remove empty directories
+                # remove empty directories
                 if [ -d "$input_dir/Image" ] && [ ! "$(ls -A "$input_dir/Image")" ]; then
                     rm -r "$input_dir/Image"
                     echo -e "${GREEN}Removed empty directory: $input_dir/Image.${NC}"
