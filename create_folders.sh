@@ -86,5 +86,5 @@ create_folders() {
     done
 }
 
-# call function to create folders with command line arguments
+# call function to create folders and move files
 create_folders "$@"
