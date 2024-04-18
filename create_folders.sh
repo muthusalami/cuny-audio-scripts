@@ -12,7 +12,7 @@ create_folders() {
     for input_dir in "${input_dirs[@]}"; do
         # check if the input directory exists
         if [ ! -d "$input_dir" ]; then
-            echo -e "${RED}Input directory $input_dir does not exist. Skipping.${NC}"
+            echo -e "${YELLOW}Input directory $input_dir does not exist. Skipping.${NC}"
             continue
         fi
 
@@ -22,7 +22,7 @@ create_folders() {
             mkdir "$metadata_dir"
             echo -e "${GREEN}Created 'metadata' folder in $input_dir.${NC}"
         else
-            echo -e "${RED}'metadata' folder already exists in $input_dir.${NC}"
+            echo -e "${YELLOW}'metadata' folder already exists in $input_dir.${NC}"
         fi
 
         # create depictions folder inside metadata
@@ -37,10 +37,10 @@ create_folders() {
                 mkdir "$object_photos_dir"
                 echo -e "${GREEN}Created 'object_photos' folder in $depictions_dir.${NC}"
             else
-                echo -e "${RED}'object_photos' folder already exists in $depictions_dir.${NC}"
+                echo -e "${YELLOW}'object_photos' folder already exists in $depictions_dir.${NC}"
             fi
         else
-            echo -e "${RED}'depictions' folder already exists in $metadata_dir.${NC}"
+            echo -e "${YELLOW}'depictions' folder already exists in $metadata_dir.${NC}"
         fi
 
         # create objects folder
@@ -49,7 +49,7 @@ create_folders() {
             mkdir "$objects_dir"
             echo -e "${GREEN}Created 'objects' folder in $input_dir.${NC}"
         else
-            echo -e "${RED}'objects' folder already exists in $input_dir.${NC}"
+            echo -e "${YELLOW}'objects' folder already exists in $input_dir.${NC}"
         fi
     done
 }
