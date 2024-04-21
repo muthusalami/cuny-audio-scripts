@@ -62,7 +62,7 @@ check_wav_header() {
 # }
 
 make_mka() {
-	local wav_file="$1"
+    local wav_file="$1"
     local mka_directory="$(dirname "$wav_file")/mka"
 
     mkdir -p "$mka_directory"
