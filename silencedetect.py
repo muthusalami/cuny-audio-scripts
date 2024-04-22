@@ -198,10 +198,8 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
 
         xml_file = f"{filename}.cue.xml"
         import_xml(file_path, xml_file)
+        export_xml = f"{filename}_xml.txt"
         export_new_xml(file_path, xml_file, filename)
-        
-        # move wav.cue.file to /metadata/silencedetect
-        # move xml file to /metadata/silencedetect
 
         plt.figure(figsize=(30, 10))
         plt.plot(x)
@@ -242,7 +240,6 @@ def export_new_xml(wav_file, xml_file, filename):
         # execute the bwfmetaedit command and redirect the output to the specified XML file
         command = ['bwfmetaedit', '--out-xml', wav_file]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-
 
         # save the output to the filename_xml.txt file
         output_text_file = f"{filename}_xml.txt"
