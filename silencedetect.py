@@ -257,7 +257,11 @@ if __name__ == "__main__":
 
     # iterate through provided file paths and process each audio file
     for file_path in sys.argv[1:]:
+        # change directory to the directory of the file
+        file_directory = os.path.dirname(file_path)
+        os.chdir(file_directory)
         filename = os.path.basename(file_path)
+        
         print_green(f"============{filename}============")
         check_wav_header(file_path)
         process_audio_file(file_path)
