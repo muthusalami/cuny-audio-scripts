@@ -198,7 +198,6 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
 
         xml_file = f"{filename}.cue.xml"
         import_xml(file_path, xml_file)
-        export_xml = f"{filename}_xml.txt"
         export_new_xml(file_path, xml_file, filename)
 
         plt.figure(figsize=(30, 10))
