@@ -11,6 +11,7 @@ import librosa
 import logging
 import wave 
 import subprocess
+import shutil
 
 # escape codes for text color
 GREEN = '\033[92m'
@@ -91,8 +92,8 @@ def update_segments(filename, segments, sil_time):
     return ans
 
 # text output of the silence portions with start and end points in seconds
-def write_silence_to_txt(filename, silence_portions):
-    output_file = f"{filename}_silence_portions.txt"
+def write_silence_to_txt(filename, silence_portions, silencedetect_dir):
+    output_file = os.path.join(silencedetect_dir, f"{filename}_silence_portions.txt")
     with open(output_file, 'w') as file:
         file.write(f"Silence breakdown for {filename}:\n")
         for idx, portion in enumerate(silence_portions, start=1):
@@ -184,15 +185,23 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
 
         print_green(f"[ORIGINAL DURATION] {duration_timecode} ({duration_timecode_sample})")
         print_green(f"[TRIMMED DURATION] {get_timecode(trim_duration)} ({trim_duration_sample})")
+        
+        # create /metadata/silencedetect directory
+        root_parent_directory = os.path.dirname(os.path.dirname(file_path))
+        silencedetect_dir = os.path.join(root_parent_directory, "metadata", "silencedetect")
+        if not os.path.exists(silencedetect_dir):
+            os.makedirs(silencedetect_dir)
 
-        write_silence_to_txt(filename, updated_segments)
+        write_silence_to_txt(filename, updated_segments, silencedetect_dir)
 
         generate_xml_file_function(filename, generate_xml_file, sample_rate, end_of_first_silence_sample, start_of_last_silence_sample)
 
         xml_file = f"{filename}.cue.xml"
         import_xml(file_path, xml_file)
-
         export_new_xml(file_path, xml_file, filename)
+        
+        # move wav.cue.file to /metadata/silencedetect
+        # move xml file to /metadata/silencedetect
 
         plt.figure(figsize=(30, 10))
         plt.plot(x)
@@ -206,7 +215,8 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         output_file = f"{filename}_plot_with_silence.png"
         plt.savefig(output_file)
         plt.close()
-        print_green(f"[{filename}] Graph saved as {output_file}")
+        shutil.move(output_file, os.path.join(silencedetect_dir, output_file))
+        print_green(f"[{filename}] Graph saved as {output_file} in {silencedetect_dir}")
 
     except Exception as e:
         print_red(f"Error processing {filename}: {str(e)}")
