@@ -213,7 +213,9 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         plt.savefig(output_file)
         plt.close()
         shutil.move(output_file, os.path.join(silencedetect_dir, output_file))
-        print_green(f"[{filename}] Graph saved as {output_file} in {silencedetect_dir}")
+        print_green(f"[{filename}] Graph saved as {output_file} in {silencedetect_dir}.")
+
+        shutil.move(xml_file, os.path.join(silencedetect_dir, os.path.basename(xml_file)))
 
     except Exception as e:
         print_red(f"Error processing {filename}: {str(e)}")
@@ -245,7 +247,7 @@ def export_new_xml(wav_file, xml_file, filename):
         with open(output_text_file, 'w') as text_file:
             text_file.write(result.stdout)
 
-        print_green(f"[{filename}] Exported XML with chunk information. Saved as {os.path.basename(xml_file)}")
+        print_green(f"[{filename}] Exported XML with chunk information. Saved as {os.path.basename(xml_file)}.")
     
     except subprocess.CalledProcessError as e:
         print_red(f"[{filename}] Error executing bwfmetaedit: {e}")
