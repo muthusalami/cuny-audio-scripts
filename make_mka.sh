@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# required tools - ffmpeg &mkvtoolnix
+# required tools - ffmpeg & mkvtoolnix
 
 # color codes for messages
 GREEN='\033[0;32m'
