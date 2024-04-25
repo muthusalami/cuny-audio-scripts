@@ -187,7 +187,22 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         print_green(f"[TRIMMED DURATION] {get_timecode(trim_duration)} ({trim_duration_sample})")
         
         # create /metadata/silencedetect directory
-        root_parent_directory = os.path.dirname(os.path.dirname(file_path))
+        # root_parent_directory = os.path.dirname(os.path.dirname(os.path.dirname(file_path)))
+        # silencedetect_dir = os.path.join(root_parent_directory, "metadata", "silencedetect")
+        # if not os.path.exists(silencedetect_dir):
+        #     os.makedirs(silencedetect_dir)
+
+        if "/objects/restoration" in file_path:
+            levels_up = 3
+        elif "/objects" in file_path:
+            levels_up = 2
+        else:
+            levels_up = 1
+
+        root_parent_directory = file_path
+        for _ in range(levels_up):
+            root_parent_directory = os.path.dirname(root_parent_directory)
+
         silencedetect_dir = os.path.join(root_parent_directory, "metadata", "silencedetect")
         if not os.path.exists(silencedetect_dir):
             os.makedirs(silencedetect_dir)
