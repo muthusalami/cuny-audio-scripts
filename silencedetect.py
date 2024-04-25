@@ -192,6 +192,7 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         # if not os.path.exists(silencedetect_dir):
         #     os.makedirs(silencedetect_dir)
 
+        # conditions to determine where to save the /metadata/silencedetect directory with sidecar files
         if "/objects/restoration" in file_path:
             levels_up = 3
         elif "/objects" in file_path:
@@ -214,6 +215,15 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         xml_file = f"{filename}.cue.xml"
         import_xml(file_path, xml_file)
         export_new_xml(file_path, xml_file, filename, silencedetect_dir)
+
+        # outputs new duration information into silencedetect directory
+        output_file_path = os.path.join(silencedetect_dir, f"{filename}_new_duration.txt")
+        with open(output_file_path, 'w') as f:
+            f.write(f" {filename}\n")
+            f.write(f"[ORIGINAL DURATION]{duration_timecode} ({duration_timecode_sample})\n")
+            f.write(f"[TRIMMED DURATION]{get_timecode(trim_duration)} ({trim_duration_sample})\n")
+            f.write(f"[IN]{end_of_first_silence_timecode} ({end_of_first_silence_sample})\n")
+            f.write(f"[OUT]{start_of_last_silence_timecode} ({start_of_last_silence_sample})\n")
 
         plt.figure(figsize=(30, 10))
         plt.plot(x)
