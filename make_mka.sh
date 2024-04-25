@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# required tools - ffmpeg &mkvtoolnix
+# required tools - ffmpeg & mkvtoolnix
 
 # color codes for messages
 GREEN='\033[0;32m'
@@ -104,7 +104,7 @@ for directory in "$@"; do
 done
 
 echo -e "${YELLOW}Do you want to add chapter information to the MKA file(s)? (y/n): ${NC}"
-read -p "Choice: " add_chapters
+read -p "(y/n): " add_chapters
 
 if [[ $add_chapters == "y" || $add_chapters == "Y" ]]; then
     for mka_file in "${mka_files[@]}"; do
