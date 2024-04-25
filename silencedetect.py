@@ -204,7 +204,7 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         for _ in range(levels_up):
             root_parent_directory = os.path.dirname(root_parent_directory)
 
-        silencedetect_dir = os.path.join(root_parent_directory, "metadata", "silencedetect")
+        silencedetect_dir = os.path.join(root_parent_directory, "metadata", "silencedetect", filename)
         if not os.path.exists(silencedetect_dir):
             os.makedirs(silencedetect_dir)
 
@@ -216,7 +216,7 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
         import_xml(file_path, xml_file)
         export_new_xml(file_path, xml_file, filename, silencedetect_dir)
 
-        # outputs new duration information into silencedetect directory
+        # output new duration information into silencedetect directory
         output_file_path = os.path.join(silencedetect_dir, f"{filename}_new_duration.txt")
         with open(output_file_path, 'w') as f:
             f.write(f" {filename}\n")
@@ -224,6 +224,14 @@ def process_audio_file(file_path, sil_time=0.020, generate_xml_file=True):
             f.write(f"[TRIMMED DURATION]{get_timecode(trim_duration)} ({trim_duration_sample})\n")
             f.write(f"[IN]{end_of_first_silence_timecode} ({end_of_first_silence_sample})\n")
             f.write(f"[OUT]{start_of_last_silence_timecode} ({start_of_last_silence_sample})\n")
+
+        # output chapter information into silencedetect directory
+        output_file_path = os.path.join(silencedetect_dir, f"{filename}_chapterinfo.txt")
+        with open(output_file_path, 'w') as f:
+            f.write(f"CHAPTER01={end_of_first_silence_timecode} START\n")
+            f.write(f"CHAPTER01NAME=START\n")
+            f.write(f"CHAPTER02={start_of_last_silence_timecode} END\n")
+            f.write(f"CHAPTER02NAME=END\n")
 
         plt.figure(figsize=(30, 10))
         plt.plot(x)
