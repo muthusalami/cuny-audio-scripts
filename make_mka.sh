@@ -50,7 +50,7 @@ check_wav_header() {
 }
 
 # make_restored_mka() {
-# 	ffmpeg -hide_banner -i "$wav_file" -ac 1 -filter_complex \
+#   ffmpeg -hide_banner -i "$wav_file" -ac 1 -filter_complex \
 #       "adeclick=window=55:overlap=75[DC1]; \
 #       [DC1]acrossover=split=1500 8000:order=20th[LOW][MID][HIGH]; \
 #       [LOW]adeclick=window=55:overlap=75[LOW1]; \
@@ -60,7 +60,7 @@ check_wav_header() {
 #       [DCMIX]highpass=f=60:t=s,lowpass=f=10000:t=s" \
 #       -c copy "$(basename "$wav_file")".mkv)
 
-# 	mv "$(basename "$wav_file")".mkv) mka
+#   mv "$(basename "$wav_file")".mkv) mka
 # }
 
 make_mka() {
@@ -72,7 +72,7 @@ make_mka() {
     # extract filename without extension
     local filename_no_extension="$(basename "$wav_file" .wav)"
 
-	ffmpeg -hide_banner -i "$wav_file" \
+    ffmpeg -hide_banner -i "$wav_file" \
       -c copy "$mka_directory/$filename_no_extension".mka
 }
 
@@ -85,13 +85,13 @@ if [[ $# -eq 0 ]]; then
 fi
 
 for directory in "$@"; do
-	# check if directory is empty
+    # check if directory is empty
     if ! check_empty_directory "$directory"; then
         continue
     fi
 
     # find all WAV files in the directory and its subdirectories
-    for wav_file in $(find "$directory" -type f -name "*.wav"); do
+    find "$directory" -type f -name "*.wav" -print0 | while IFS= read -r -d '' wav_file; do
         echo "============$(basename "$wav_file")============"
         if check_wav_header "$wav_file"; then
             # convert WAV to MKA and move it to 'mka' directory
@@ -109,7 +109,7 @@ read -p "(y/n): " add_chapters
 if [[ $add_chapters == "y" || $add_chapters == "Y" ]]; then
     for mka_file in "${mka_files[@]}"; do
         # prompt user for the chapter information file
-        read -p "Please provide the path to the .txt file containing chapter information for $(basename "$mka_file"): " chapter_file
+        read -rp "Please provide the path to the .txt file containing chapter information for $(basename "$mka_file"): " chapter_file
         if [[ -f "$chapter_file" ]]; then
             mkvpropedit "$mka_file" --chapters "$chapter_file"
             echo -e "${GREEN}[Chapter Info Added] ${mka_file}${NC}"
